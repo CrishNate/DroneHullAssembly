@@ -31,7 +31,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5660708078022041694}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.113, z: 0}
+  m_LocalPosition: {x: 0, y: 5.79, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -120,7 +120,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &7199396447148319326
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -134,7 +134,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 9
+    VectorObservationSize: 15
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 4
@@ -143,8 +143,8 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: 22ad461c9725a3142b9ebdd5dd9c9726, type: 3}
-  m_InferenceDevice: 2
+  m_Model: {fileID: 5022602860645237092, guid: 40426c2180ec2ab439eebefda5b6f972, type: 3}
+  m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: DroneStayMiddle
   TeamId: 0
@@ -167,9 +167,8 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 500
+  MaxStep: 1000
   _targetTransform: {fileID: 0}
-  m_TargetWalkingSpeed: 10
 --- !u!114 &7796892795543562317
 MonoBehaviour:
   m_ObjectHideFlags: 0

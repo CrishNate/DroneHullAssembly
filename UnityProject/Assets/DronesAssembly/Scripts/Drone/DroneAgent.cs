@@ -48,10 +48,10 @@ public class DroneAgent : Agent
         //float matchDir = GetMatchingVelocityReward(_targetTransform.position - transform.position, m_Rigidbody.velocity);
 
         float dist = (_targetTransform.position - transform.position).magnitude;
-        float mathDir = dist < DistanceThreshold ? angle * (1 - dist) : -dist / MaxDist * 0.1f - (1 - angle);
+        float mathDir = dist < DistanceThreshold ? angle * (2 - dist) : -dist / MaxDist * 0.5f - (1 - angle);
         
         AddReward(mathDir);
-        AddReward(m_Rigidbody.velocity.magnitude * -0.2f);
+        AddReward(m_Rigidbody.velocity.magnitude * -0.1f);
         AddReward(m_Rigidbody.angularVelocity.magnitude * -0.1f);
 
         if (angle < 0)

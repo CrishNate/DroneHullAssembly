@@ -143,7 +143,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: 40426c2180ec2ab439eebefda5b6f972, type: 3}
+  m_Model: {fileID: 5022602860645237092, guid: e28a598b35151fe4380ff2ec909b7b97, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: DroneStayMiddle

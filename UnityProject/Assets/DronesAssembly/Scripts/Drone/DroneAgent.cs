@@ -13,8 +13,8 @@ using Random = UnityEngine.Random;
 public class DroneAgent : Agent
 {
     [SerializeField] private Transform _targetTransform;
+    [SerializeField] private List<PropellerPart> m_PropellerParts = new List<PropellerPart>();
     
-    private readonly List<PropellerPart> m_PropellerParts = new List<PropellerPart>();
     private Rigidbody m_Rigidbody;
     private Vector3 m_CachedPosition;
     
@@ -26,11 +26,9 @@ public class DroneAgent : Agent
         m_Rigidbody = GetComponent<Rigidbody>();
         m_CachedPosition = transform.position;
 
-        foreach (PropellerPart propellerPart in GetComponentsInChildren<PropellerPart>())
+        foreach (PropellerPart propellerPart in m_PropellerParts)
         {
             propellerPart.agent = this;
-            
-            m_PropellerParts.Add(propellerPart);
         }
     }
     
@@ -77,9 +75,9 @@ public class DroneAgent : Agent
             propellerPart.Reset();
         }
         
+        m_Rigidbody.Sleep();
         m_Rigidbody.velocity = Vector3.zero;
         m_Rigidbody.angularVelocity = Vector3.zero;
-        m_Rigidbody.Sleep();
         
         Vector2 randomPos = Random.insideUnitCircle;
         transform.position = m_CachedPosition + new Vector3(randomPos.x, 0, randomPos.y) * (MaxDist - 1);
@@ -98,7 +96,7 @@ public class DroneAgent : Agent
 
         foreach (PropellerPart propellerPart in m_PropellerParts)
         {
-            sensor.AddObservation(propellerPart.Thrust);
+            sensor.AddObservation(propellerPart.CurrentThrust);
         }
     }
 

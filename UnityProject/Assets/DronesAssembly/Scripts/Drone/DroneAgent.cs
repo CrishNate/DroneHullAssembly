@@ -25,17 +25,28 @@ public class DroneAgent : Agent
     {
         m_Rigidbody = GetComponent<Rigidbody>();
         m_CachedPosition = transform.position;
-
-        foreach (PropellerPart propellerPart in m_PropellerParts)
+        
+        m_PropellerParts.Clear();
+        foreach (PropellerPart propellerPart in GetComponentsInChildren<PropellerPart>())
         {
             propellerPart.agent = this;
+            m_PropellerParts.Add(propellerPart);
         }
     }
-    
+
     protected override void OnEnable()
     {
         var behaviorParameters = GetComponent<BehaviorParameters>();
-        //behaviorParameters.BrainParameters.ActionSpec.NumContinuousActions;
+        
+        string[] args = Environment.GetCommandLineArgs();
+        foreach (string arg in args)
+        {
+            if (arg.Equals("--size", StringComparison.InvariantCultureIgnoreCase))
+            {
+                behaviorParameters.BrainParameters.VectorObservationSize = 1;
+                behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(1);
+            }
+        }
             
         base.OnEnable();
     }

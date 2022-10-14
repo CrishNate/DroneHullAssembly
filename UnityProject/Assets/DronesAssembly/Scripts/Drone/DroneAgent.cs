@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DotNetGraph;
 using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
@@ -9,7 +10,6 @@ using MBaske;
 using Random = UnityEngine.Random;
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(Rigidbody))]
 public class DroneAgent : Agent
 {
     [SerializeField] private Transform _targetTransform;
@@ -17,13 +17,14 @@ public class DroneAgent : Agent
     
     private Rigidbody m_Rigidbody;
     private Vector3 m_CachedPosition;
-    
+        
     const float MaxDist = 5;
     const float DistanceThreshold = 1;
 
     public override void Initialize()
     {
-        m_Rigidbody = GetComponent<Rigidbody>();
+        var drone = DroneAssembly.Instance.DroneGenerate();
+        m_Rigidbody = DroneAssembly.AssembleDrone(drone, transform).GetComponent<Rigidbody>();
         m_CachedPosition = transform.position;
         
         m_PropellerParts.Clear();
@@ -53,6 +54,8 @@ public class DroneAgent : Agent
 
     private void FixedUpdate()
     {
+        return;
+        
         float angle = transform.up.y;
         //float matchDir = GetMatchingVelocityReward(_targetTransform.position - transform.position, m_Rigidbody.velocity);
 
@@ -81,6 +84,8 @@ public class DroneAgent : Agent
     
     public override void OnEpisodeBegin()
     {
+        return;
+        
         foreach (PropellerPart propellerPart in m_PropellerParts)
         {
             propellerPart.Reset();
@@ -97,26 +102,26 @@ public class DroneAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformPoint(_targetTransform.position), 0.25f));
-        sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.velocity),0.5f));
-        sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.angularVelocity)));
-        
-        var rotation = transform.rotation.eulerAngles / 90.0f;
-        sensor.AddObservation(rotation.x > 2.0f ? rotation.x - 4 : rotation.x);
-        sensor.AddObservation(rotation.z > 2.0f ? rotation.z - 4 : rotation.z);
-
-        foreach (PropellerPart propellerPart in m_PropellerParts)
-        {
-            sensor.AddObservation(propellerPart.CurrentThrust);
-        }
+        // sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformPoint(_targetTransform.position), 0.25f));
+        // sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.velocity),0.5f));
+        // sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.angularVelocity)));
+        //
+        // var rotation = transform.rotation.eulerAngles / 90.0f;
+        // sensor.AddObservation(rotation.x > 2.0f ? rotation.x - 4 : rotation.x);
+        // sensor.AddObservation(rotation.z > 2.0f ? rotation.z - 4 : rotation.z);
+        //
+        // foreach (PropellerPart propellerPart in m_PropellerParts)
+        // {
+        //     sensor.AddObservation(propellerPart.CurrentThrust);
+        // }
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        for (int i = 0; i < m_PropellerParts.Count; i++)
-        {
-            m_PropellerParts[i].SetThrust(actions.ContinuousActions[i] / 2.0f + 0.5f);
-        }
+        // for (int i = 0; i < m_PropellerParts.Count; i++)
+        // {
+        //     m_PropellerParts[i].SetThrust(actions.ContinuousActions[i] / 2.0f + 0.5f);
+        // }
     }
 
     private void OnCollisionEnter(Collision col)

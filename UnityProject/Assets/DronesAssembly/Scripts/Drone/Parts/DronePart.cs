@@ -6,6 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public abstract class DronePart : MonoBehaviour
 {
+    public Transform[] sockets;
     [HideInInspector] public DroneAgent agent;
     private Rigidbody m_Rigidbody;
     
@@ -14,8 +15,12 @@ public abstract class DronePart : MonoBehaviour
         m_Rigidbody = GetComponent<Rigidbody>();
     }
     
-    public virtual void Reset()
-    { }
+    public void Reset()
+    {
+        m_Rigidbody.Sleep();
+        m_Rigidbody.velocity = Vector3.zero;
+        m_Rigidbody.angularVelocity = Vector3.zero;
+    }
 
     protected Rigidbody Rigidbody => m_Rigidbody;
 }

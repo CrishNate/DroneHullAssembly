@@ -1,12 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using DotNetGraph;
-using DotNetGraph.Core;
 using DotNetGraph.Edge;
 using DotNetGraph.Node;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class DroneAssembly : Singleton<DroneAssembly>
 {
@@ -15,7 +11,6 @@ public class DroneAssembly : Singleton<DroneAssembly>
         
     public static DronePart AssembleDrone(DotGraph drone, Transform parent)
     {
-        print(HullModelString(drone));
         List<DotNode> nodes = new List<DotNode>();
         List<DotEdge> edges = new List<DotEdge>();
         
@@ -33,24 +28,19 @@ public class DroneAssembly : Singleton<DroneAssembly>
             }
         }
 
-        DotNode rootNode = nodes.Find(node => node.Label.Text == "root");
+        DotNode rootNode = nodes.Find(node => node.Identifier == "root");
 
         DronePart dronePart = Instance.AssemblePart(rootNode, null, 0, 0, edges, parent, false);
-        foreach (Rigidbody child in parent.GetComponentsInChildren<Rigidbody>())
-        {
-            child.isKinematic = false;
-        }
 
         return dronePart;
     }
 
     private DronePart AssemblePart(DotNode element, DronePart dronePartL, int socketInxTo, int socketInxFrom, List<DotEdge> edges, Transform parent, bool mirror)
     {
-        if (label2DroneParts[element.Label.Text] == null)
+        if (label2DroneParts[element.Identifier] == null)
             return null;
         
-        DronePart dronePartR = Instantiate(label2DroneParts[element.Label.Text], parent);
-        dronePartR.GetComponent<Rigidbody>().isKinematic = true;
+        DronePart dronePartR = Instantiate(label2DroneParts[element.Identifier], parent);
 
         if (dronePartL != null)
         {
@@ -59,10 +49,8 @@ public class DroneAssembly : Singleton<DroneAssembly>
 
             dronePartR.transform.rotation = socketFrom.rotation * Quaternion.Inverse(socketTo.localRotation * Quaternion.Euler(0, 180, 0));
             dronePartR.transform.position = socketFrom.position - dronePartR.transform.TransformDirection(socketTo.localPosition * socketTo.lossyScale.x);
-
-            var joint = dronePartL.AddComponent<FixedJoint>();
-            joint.enableCollision = false;
-            joint.connectedBody = dronePartR.GetComponent<Rigidbody>();
+            
+            dronePartR.transform.SetParent(dronePartL.transform, true);
         }
 
         List<DotEdge> dotEdges = edges.FindAll(edge => edge.Left == element);
@@ -70,7 +58,7 @@ public class DroneAssembly : Singleton<DroneAssembly>
         foreach (DotEdge dotEdge in dotEdges)
         {
             int socketTo = (mirror && dotEdge.MirrorSocket != null ? dotEdge.MirrorSocket.SocketIndex : dotEdge.Socket.SocketIndex);
-            int socketFrom = dotEdge.SocketTo == null ? 0 : dotEdge.SocketTo.SocketIndex;
+            int socketFrom = dotEdge.SocketTo?.SocketIndex ?? 0;
             AssemblePart(dotEdge.Right as DotNode, dronePartR, socketTo, socketFrom, edges, parent, mirror);
 
             if (dotEdge.Mirror is { SocketMirror: true })
@@ -103,38 +91,54 @@ public class DroneAssembly : Singleton<DroneAssembly>
 
         DotGraph droneGraph = new DotGraph();
 
-        DotNode rootNode = nodes.Find(x => x.Label.Text == "root").Clone() as DotNode;
+        DotNode rootNode = nodes.Find(x => x.Identifier == "root").Clone() as DotNode;
         droneGraph.Elements.Add(rootNode);
 
-        PartGenerate(rootNode, droneGraph, nodes, edges, 0);
+        PartGenerate(rootNode, droneGraph, edges, 0);
         
         return droneGraph;
     }
     
-    public void PartGenerate(DotNode node, DotGraph graph, List<DotNode> nodes, List<DotEdge> edges, int depth)
+    public void PartGenerate(DotNode node, DotGraph graph, List<DotEdge> edges, int depth)
     {
-        if (label2DroneParts[node.Label.Text] == null)
+        if (label2DroneParts[node.Identifier] == null)
             return;
-        
-        for (int i = 0; i < label2DroneParts[node.Label.Text].sockets.Length; i++)
+
+        List<int> ignoreSockets = new List<int>();
+        for (int i = 0; i < label2DroneParts[node.Identifier].sockets.Length; i++)
         {
-            DotNode baseNode = nodes.Find(x => x.Label == node.Label);
-            List<DotEdge> dotEdges = edges.FindAll(x => x.Left == baseNode && x.Socket != null && x.Socket.SocketIndex == i);
+            if (ignoreSockets.Contains(i))
+                continue;
+            
+            List<DotEdge> dotEdges = edges.FindAll(x => (x.Left as DotNode)?.Identifier == node.Identifier 
+                                                        && (x.Socket != null && x.Socket.SocketIndex == i || x.Socket == null));
             if (dotEdges.Count == 0)
                 continue;
 
-            DotEdge edge = dotEdges[Random.Range(0, dotEdges.Count)].Clone() as DotEdge;
+            DotEdge edge = dotEdges[Random.Range(0, dotEdges.Count)].Clone() as DotEdge;;
+            if (depth >= 5 && dotEdges.Find(x => (x.Right as DotNode)?.Identifier == "propeller") is { } edgeFound)
+            {
+                edge = edgeFound.Clone() as DotEdge;
+            }
+            else
+            {
+                edge = dotEdges[Random.Range(0, dotEdges.Count)].Clone() as DotEdge;
+            }
+
             DotNode partNode = (edge.Right as DotNode).Clone() as DotNode;
             edge.Left = node;
             edge.Right = partNode;
+
+            // We add the mirrored socket so it won't add part to it twice
+            if (edge.MirrorSocket != null && edge.Mirror is { SocketMirror: true })
+            {
+                ignoreSockets.Add(edge.MirrorSocket.SocketIndex);
+            }
             
             graph.Elements.Add(partNode);
             graph.Elements.Add(edge);
-
-            if (depth < 4)
-            {
-                PartGenerate(partNode, graph, nodes, edges, ++depth);
-            }
+            
+            PartGenerate(partNode, graph, edges, ++depth);
         }
     }
 
@@ -162,7 +166,7 @@ public class DroneAssembly : Singleton<DroneAssembly>
 
         foreach (DotNode node in nodes)
         {
-            result.Add(DroneGraph.Instance.DirectedGraph.Elements.FindIndex(x => (x as DotNode)?.Label == node.Label));
+            result.Add(DroneGraph.Instance.DirectedGraph.Elements.FindIndex(x => (x as DotNode)?.Identifier == node.Identifier));
         }
 
         foreach (DotEdge edge in edges)

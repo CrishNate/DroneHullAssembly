@@ -24,7 +24,9 @@ public class DroneAgent : Agent
     public override void Initialize()
     {
         var drone = DroneAssembly.Instance.DroneGenerate();
-        m_Rigidbody = DroneAssembly.AssembleDrone(drone, transform).GetComponent<Rigidbody>();
+        m_Rigidbody = GetComponent<Rigidbody>();
+        DroneAssembly.AssembleDrone(drone, transform);
+        
         m_CachedPosition = transform.position;
         
         m_PropellerParts.Clear();

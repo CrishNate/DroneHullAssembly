@@ -21,43 +21,32 @@ public class DroneAgent : Agent
     const float MaxDist = 5;
     const float DistanceThreshold = 1;
 
-    public override void Initialize()
+    public void Initialize(DotGraph graph)
     {
-        var drone = DroneAssembly.Instance.DroneGenerate();
-        m_Rigidbody = GetComponent<Rigidbody>();
-        DroneAssembly.AssembleDrone(drone, transform);
-        
         m_CachedPosition = transform.position;
+
+        var behaviorParameters = GetComponent<BehaviorParameters>();
         
+        m_Rigidbody = GetComponent<Rigidbody>();
+        DroneAssembly.AssembleDrone(graph, transform);
+
         m_PropellerParts.Clear();
         foreach (PropellerPart propellerPart in GetComponentsInChildren<PropellerPart>())
         {
-            propellerPart.agent = this;
+            propellerPart.Init(this, m_Rigidbody);
             m_PropellerParts.Add(propellerPart);
         }
-    }
-
-    protected override void OnEnable()
-    {
-        var behaviorParameters = GetComponent<BehaviorParameters>();
         
-        string[] args = Environment.GetCommandLineArgs();
-        foreach (string arg in args)
-        {
-            if (arg.Equals("--size", StringComparison.InvariantCultureIgnoreCase))
-            {
-                behaviorParameters.BrainParameters.VectorObservationSize = 1;
-                behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(1);
-            }
-        }
-            
-        base.OnEnable();
+        // 3 - target position offset
+        // 3 - velocity
+        // 3 - angular velocity
+        // 2 - rotation local
+        behaviorParameters.BrainParameters.VectorObservationSize = 11 + m_PropellerParts.Count;
+        behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(m_PropellerParts.Count);
     }
 
     private void FixedUpdate()
     {
-        return;
-        
         float angle = transform.up.y;
         //float matchDir = GetMatchingVelocityReward(_targetTransform.position - transform.position, m_Rigidbody.velocity);
 
@@ -86,8 +75,6 @@ public class DroneAgent : Agent
     
     public override void OnEpisodeBegin()
     {
-        return;
-        
         foreach (PropellerPart propellerPart in m_PropellerParts)
         {
             propellerPart.Reset();
@@ -104,26 +91,26 @@ public class DroneAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        // sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformPoint(_targetTransform.position), 0.25f));
-        // sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.velocity),0.5f));
-        // sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.angularVelocity)));
-        //
-        // var rotation = transform.rotation.eulerAngles / 90.0f;
-        // sensor.AddObservation(rotation.x > 2.0f ? rotation.x - 4 : rotation.x);
-        // sensor.AddObservation(rotation.z > 2.0f ? rotation.z - 4 : rotation.z);
-        //
-        // foreach (PropellerPart propellerPart in m_PropellerParts)
-        // {
-        //     sensor.AddObservation(propellerPart.CurrentThrust);
-        // }
+        sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformPoint(_targetTransform.position), 0.25f));
+        sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.velocity),0.5f));
+        sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.angularVelocity)));
+        
+        var rotation = transform.rotation.eulerAngles / 90.0f;
+        sensor.AddObservation(rotation.x > 2.0f ? rotation.x - 4 : rotation.x);
+        sensor.AddObservation(rotation.z > 2.0f ? rotation.z - 4 : rotation.z);
+        
+        foreach (PropellerPart propellerPart in m_PropellerParts)
+        {
+            sensor.AddObservation(propellerPart.CurrentThrust);
+        }
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        // for (int i = 0; i < m_PropellerParts.Count; i++)
-        // {
-        //     m_PropellerParts[i].SetThrust(actions.ContinuousActions[i] / 2.0f + 0.5f);
-        // }
+        for (int i = 0; i < m_PropellerParts.Count; i++)
+        {
+            m_PropellerParts[i].SetThrust(actions.ContinuousActions[i] / 2.0f + 0.5f);
+        }
     }
 
     private void OnCollisionEnter(Collision col)

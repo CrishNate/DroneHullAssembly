@@ -16,6 +16,7 @@ public class PropellerPart : DronePart
 
     public void FixedUpdate()
     {
+        RigidbodyRef.AddForceAtPosition(transform.up * (m_Value * thrustScale), transform.position, ForceMode.Force);
         //m_CurrentThrust = Mathf.Lerp(m_CurrentThrust, m_Value, Time.fixedDeltaTime * thrustResponse);
         //Rigidbody.AddForce(transform.up * (m_Value * thrustScale), ForceMode.Impulse);
         //Rigidbody.AddRelativeTorque(transform.up * (m_CurrentThrust * torqueScale * (rotationCW ? -1 : 1)), ForceMode.Impulse);

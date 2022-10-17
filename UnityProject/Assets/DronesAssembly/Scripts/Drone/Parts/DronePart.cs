@@ -7,8 +7,25 @@ public abstract class DronePart : MonoBehaviour
 {
     public Transform[] sockets;
     public float mass;
-    [HideInInspector] public DroneAgent agent;
+    
+    public DroneAgent Agent
+    {
+        get;
+        private set;
+    }
 
+    protected Rigidbody RigidbodyRef
+    {
+        get;
+        private set;
+    }
+
+    public void Init(DroneAgent inAgent, Rigidbody inRigidbody)
+    {
+        Agent = inAgent;
+        RigidbodyRef = inRigidbody;
+    }
+    
     private void Start()
     { }
     

@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using DotNetGraph;
+using DotNetGraph.Core;
 using DotNetGraph.Edge;
 using DotNetGraph.Node;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class DroneAssembly : Singleton<DroneAssembly>
@@ -115,7 +118,7 @@ public class DroneAssembly : Singleton<DroneAssembly>
             if (dotEdges.Count == 0)
                 continue;
 
-            DotEdge edge = dotEdges[Random.Range(0, dotEdges.Count)].Clone() as DotEdge;;
+            DotEdge edge = dotEdges[Random.Range(0, dotEdges.Count)].Clone() as DotEdge;
             if (depth >= 5 && dotEdges.Find(x => (x.Right as DotNode)?.Identifier == "propeller") is { } edgeFound)
             {
                 edge = edgeFound.Clone() as DotEdge;
@@ -171,10 +174,55 @@ public class DroneAssembly : Singleton<DroneAssembly>
 
         foreach (DotEdge edge in edges)
         {
+            result.Add(DroneGraph.Instance.DirectedGraph.Elements.FindIndex(x =>
+                (x as DotEdge)?.Socket.SocketIndex == edge.Socket.SocketIndex
+                && (((DotEdge)x).Left as DotNode)?.Identifier == (edge.Left as DotNode)?.Identifier
+                && (((DotEdge)x).Right as DotNode)?.Identifier == (edge.Right as DotNode)?.Identifier));
+            
             result.Add(nodes.FindIndex(x=> x == edge.Left));
             result.Add(nodes.FindIndex(x=> x == edge.Right));
         }
 
         return string.Join(" ", result);
+    }
+
+    public static DotGraph ParseFromArgs(string[] args)
+    {
+        int[] dataArray = args.Select(int.Parse).ToArray();
+
+        if (dataArray.Length == 0)
+        {
+            Debug.LogError($"Could not parse drone from string");
+            return null;
+        }
+
+        DotGraph droneGraph = new DotGraph();
+        
+        int index = 0;
+        int partsCount = dataArray[index++];
+        
+        while (index <= partsCount)
+        {
+            DotNode node = DroneGraph.Instance.DirectedGraph.Elements[dataArray[index++]] as DotNode;
+            node = node.Clone() as DotNode;
+            
+            droneGraph.Elements.Add(node);
+        }
+        
+        while (index < dataArray.Length - 1)
+        {
+            int edgeIndex = dataArray[index++];
+            int leftIndex = dataArray[index++];
+            int rightIndex = dataArray[index++];
+            
+            DotEdge edge = DroneGraph.Instance.DirectedGraph.Elements[edgeIndex] as DotEdge;
+            edge = edge.Clone() as DotEdge;
+            edge.Left = droneGraph.Elements[leftIndex];
+            edge.Right = droneGraph.Elements[rightIndex];
+            
+            droneGraph.Elements.Add(edge);
+        }
+
+        return droneGraph;
     }
 }

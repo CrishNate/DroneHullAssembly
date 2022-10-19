@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using DotNetGraph;
+using DroneHullAssembly.Tools;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -22,12 +26,24 @@ public class EnvironmentLoader : MonoBehaviour
     
     private void OnEnable()
     {
-        string[] args = Environment.GetCommandLineArgs();
-        var graph = DroneAssembly.Instance.DroneGenerate();
-        print(DroneAssembly.HullModelString(graph));
-        //var graph = DroneAssembly.ParseFromArgs("15 0 2 7 8 1 6 3 3 3 2 8 1 1 1 8 9 0 1 21 1 2 48 2 3 46 2 4 17 4 5 33 5 6 34 5 7 35 5 8 10 0 9 23 9 10 11 0 11 18 11 12 18 12 13 19 13 14".Split(' '));
+        ArgumentsParser argumentsParser = new ArgumentsParser();
+        argumentsParser.Add("-e", "copies of environments e.g. -e 0,0", x =>
+        {
+            var split = x.Split(',');
+            copy.Set(int.Parse(split[0]), int.Parse(split[1]));
+        });
 
-        DroneAgent[] drones = Object.FindObjectsOfType<DroneAgent>();
+        string[] args = Environment.GetCommandLineArgs();
+        int lastInx = argumentsParser.Parse(args);
+        
+        Copy();
+
+        DotGraph graph = DroneAssembly.ParseFromArgs(args[Range.StartAt(lastInx)]);
+        //DotGraph graph = DroneAssembly.ParseFromArgs("11 0 2 2 8 3 1 6 3 3 1 8 9 0 1 22 1 2 23 2 3 13 0 4 11 0 5 16 5 6 27 6 7 14 6 8 26 6 9 19 9 10".Split(' '));
+        //var graph = DroneAssembly.Instance.DroneGenerate();
+        //print(DroneAssembly.HullModelString(graph));
+
+        DroneAgent[] drones = Object.FindObjectsOfType<DroneAgent>(true);
         foreach (DroneAgent drone in drones)
         {
             drone.Initialize(graph);

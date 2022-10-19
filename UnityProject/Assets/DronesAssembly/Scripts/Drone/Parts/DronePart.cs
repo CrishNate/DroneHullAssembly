@@ -26,9 +26,6 @@ public abstract class DronePart : MonoBehaviour
         RigidbodyRef = inRigidbody;
     }
     
-    private void Start()
-    { }
-    
-    public void Reset()
+    public virtual void Reset()
     { }
 }

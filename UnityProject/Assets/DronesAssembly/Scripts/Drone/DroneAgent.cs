@@ -13,7 +13,9 @@ using Random = UnityEngine.Random;
 public class DroneAgent : Agent
 {
     [SerializeField] private Transform _targetTransform;
+    [SerializeField] private List<DronePart> m_Parts = new List<DronePart>();
     [SerializeField] private List<PropellerPart> m_PropellerParts = new List<PropellerPart>();
+    [SerializeField] private List<MotorKneePart> m_Motors = new List<MotorKneePart>();
     
     private Rigidbody m_Rigidbody;
     private Vector3 m_CachedPosition;
@@ -30,19 +32,35 @@ public class DroneAgent : Agent
         m_Rigidbody = GetComponent<Rigidbody>();
         DroneAssembly.AssembleDrone(graph, transform);
 
+        m_Motors.Clear();
         m_PropellerParts.Clear();
-        foreach (PropellerPart propellerPart in GetComponentsInChildren<PropellerPart>())
+        m_Parts.Clear();
+        
+        foreach (DronePart part in GetComponentsInChildren<DronePart>())
         {
-            propellerPart.Init(this, m_Rigidbody);
-            m_PropellerParts.Add(propellerPart);
+            part.Init(this, m_Rigidbody);
+            m_Parts.Add(part);
+            
+            switch (part)
+            {
+                case PropellerPart propellerPart:
+                    m_PropellerParts.Add(propellerPart);
+                    break;
+                
+                case MotorKneePart motorKneePart:
+                    m_Motors.Add(motorKneePart);
+                    break;
+            }
         }
         
         // 3 - target position offset
         // 3 - velocity
         // 3 - angular velocity
         // 2 - rotation local
-        behaviorParameters.BrainParameters.VectorObservationSize = 11 + m_PropellerParts.Count;
-        behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(m_PropellerParts.Count);
+        behaviorParameters.BrainParameters.VectorObservationSize = 11 + m_PropellerParts.Count + m_Motors.Count * 2;
+        behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(m_PropellerParts.Count + m_Motors.Count);
+        
+        gameObject.SetActive(true);
     }
 
     private void FixedUpdate()
@@ -75,22 +93,25 @@ public class DroneAgent : Agent
     
     public override void OnEpisodeBegin()
     {
-        foreach (PropellerPart propellerPart in m_PropellerParts)
-        {
-            propellerPart.Reset();
-        }
+        m_Parts.ForEach(x => x.Reset());
         
         m_Rigidbody.Sleep();
         m_Rigidbody.velocity = Vector3.zero;
         m_Rigidbody.angularVelocity = Vector3.zero;
+
+        transform.position = m_CachedPosition;
+        transform.rotation = Quaternion.identity;
         
-        Vector2 randomPos = Random.insideUnitCircle;
-        transform.position = m_CachedPosition + new Vector3(randomPos.x, 0, randomPos.y) * (MaxDist - 1);
-        transform.rotation = Quaternion.Euler(Random.Range(-20.0f, 20.0f), Random.Range(0.0f, 360.0f), Random.Range(-20.0f, 20.0f));
+        //Vector2 randomPos = Random.insideUnitCircle;
+        //transform.position = m_CachedPosition + new Vector3(randomPos.x, 0, randomPos.y) * (MaxDist - 1);
+        //transform.rotation = Quaternion.Euler(Random.Range(-20.0f, 20.0f), Random.Range(0.0f, 360.0f), Random.Range(-20.0f, 20.0f));
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        if (sensor == null)
+            return;
+        
         sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformPoint(_targetTransform.position), 0.25f));
         sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.velocity),0.5f));
         sensor.AddObservation(Normalization.Sigmoid(transform.InverseTransformDirection(m_Rigidbody.angularVelocity)));
@@ -103,13 +124,25 @@ public class DroneAgent : Agent
         {
             sensor.AddObservation(propellerPart.CurrentThrust);
         }
+        
+        foreach (MotorKneePart motorKneePart in m_Motors)
+        {
+            sensor.AddObservation(motorKneePart.CurrentTorque);
+            sensor.AddObservation(motorKneePart.CurrentTorqueSpeed);
+        }
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        int index = 0;
         for (int i = 0; i < m_PropellerParts.Count; i++)
         {
-            m_PropellerParts[i].SetThrust(actions.ContinuousActions[i] / 2.0f + 0.5f);
+            m_PropellerParts[i].SetThrust(actions.ContinuousActions[index++] / 2.0f + 0.5f);
+        }
+        
+        for (int i = 0; i < m_Motors.Count; i++)
+        {
+            m_Motors[i].SetTorqueSpeed(actions.ContinuousActions[index++]);
         }
     }
 

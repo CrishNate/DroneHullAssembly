@@ -37,9 +37,8 @@ namespace DroneHullAssembly.Tools
             _argumentParsers.Add(new ArgumentParser(arg, desc, action));
         }
 
-        public int Parse(string[] args)
+        public void Parse(string[] args)
         {
-            int lastId = 0;
             for (int i = 0; i < args.Length; i++)
             {
                 var argumentParser = _argumentParsers.Find(x => x.Equals(args[i]));
@@ -47,10 +46,7 @@ namespace DroneHullAssembly.Tools
                     continue;
                 
                 argumentParser.Execute(args[i + 1]);
-                lastId = i + 2;
             }
-
-            return lastId;
         }
     }
 }

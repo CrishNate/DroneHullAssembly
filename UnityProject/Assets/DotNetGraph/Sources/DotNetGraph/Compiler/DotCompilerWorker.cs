@@ -293,15 +293,15 @@ namespace DotNetGraph.Compiler
                 }                
                 else if (attribute is DotSocketAttribute socketAttribute)
                 {
-                    attributeValues.Add($"socket=\"{socketAttribute.SocketIndex}\"");
+                    attributeValues.Add($"socket={socketAttribute.SocketIndex}");
                 }                
                 else if (attribute is DotSocketMirrorAttribute socketMirrorAttribute)
                 {
-                    attributeValues.Add($"socket_mirror=\"{socketMirrorAttribute.SocketIndex}\"");
+                    attributeValues.Add($"socket_mirror={socketMirrorAttribute.SocketIndex}");
                 }
                 else if (attribute is DotMirrorAttribute mirrorAttribute)
                 {
-                    attributeValues.Add($"mirror=\"{(mirrorAttribute.SocketMirror ? 1 : 0)}\"");
+                    attributeValues.Add($"mirror={(mirrorAttribute.SocketMirror ? 1 : 0)}");
                 }
                 else
                 {

@@ -45,6 +45,11 @@ public class DroneAssembly : Singleton<DroneAssembly>
         
         DronePart dronePartR = Instantiate(label2DroneParts[element.Identifier], parent);
 
+        if (mirror)
+        {
+            dronePartR.gameObject.name += "[mirror]";
+        }
+
         if (dronePartL != null)
         {
             Transform socketFrom = dronePartL.sockets[socketInxTo];
@@ -71,6 +76,12 @@ public class DroneAssembly : Singleton<DroneAssembly>
         }
 
         return dronePartR;
+    }
+
+    public static bool CheckDroneSelfCollision(DronePart drone)
+    {
+        DronePart[] parts = drone.GetComponentsInChildren<DronePart>();
+        return true;
     }
 
     public DotGraph DroneGenerate()
@@ -104,11 +115,11 @@ public class DroneAssembly : Singleton<DroneAssembly>
     
     public void PartGenerate(DotNode node, DotGraph graph, List<DotEdge> edges, int depth)
     {
-        if (label2DroneParts[node.Identifier] == null)
+        if (node.SocketCount.SocketIndex <= 1)
             return;
 
         List<int> ignoreSockets = new List<int>();
-        for (int i = 0; i < label2DroneParts[node.Identifier].sockets.Length; i++)
+        for (int i = 0; i < node.SocketCount.SocketIndex; i++)
         {
             if (ignoreSockets.Contains(i))
                 continue;
@@ -118,7 +129,7 @@ public class DroneAssembly : Singleton<DroneAssembly>
             if (dotEdges.Count == 0)
                 continue;
 
-            DotEdge edge = dotEdges[Random.Range(0, dotEdges.Count)].Clone() as DotEdge;
+            DotEdge edge;
             if (depth >= 5 && dotEdges.Find(x => (x.Right as DotNode)?.Identifier == "propeller") is { } edgeFound)
             {
                 edge = edgeFound.Clone() as DotEdge;
@@ -138,10 +149,12 @@ public class DroneAssembly : Singleton<DroneAssembly>
                 ignoreSockets.Add(edge.MirrorSocket.SocketIndex);
             }
             
+            Debug.Log(partNode.Identifier);
+            
             graph.Elements.Add(partNode);
             graph.Elements.Add(edge);
             
-            PartGenerate(partNode, graph, edges, ++depth);
+            PartGenerate(partNode, graph, edges, depth + 1);
         }
     }
 

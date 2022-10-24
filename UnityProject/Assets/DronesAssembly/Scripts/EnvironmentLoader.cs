@@ -39,6 +39,8 @@ public class EnvironmentLoader : MonoBehaviour
         int index = args.ToList().FindIndex(x => x.Equals("-d"));
         DotGraph graph = DroneAssembly.ParseFromArgs(args[Range.StartAt(index + 1)]);
 
+        //DotGraph graph = DroneAssembly.Instance.DroneGenerate();
+        print(DroneAssembly.HullModelString(graph));
         DroneAgent[] drones = FindObjectsOfType<DroneAgent>(true);
         foreach (DroneAgent drone in drones)
         {

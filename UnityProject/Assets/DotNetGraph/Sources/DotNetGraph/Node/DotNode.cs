@@ -89,6 +89,12 @@ namespace DotNetGraph.Node
             set => SetAttribute(value);
         }
 
+        public DotSocketAttribute SocketCount
+        {
+            get => GetAttribute<DotSocketAttribute>();
+            set => SetAttribute(value);
+        }
+
         public DotNode(string identifier, DotColorAttribute color = null)
         {
             if (identifier == null)

@@ -1,24 +1,25 @@
 ﻿using System.IO;
 using DotNetGraph;
+using DotNetGraph.Attributes;
 using DotNetGraph.Edge;
 using DotNetGraph.Extensions;
 using DotNetGraph.Node;
 
 public class DroneGraph : Singleton<DroneGraph>
 {
-    public readonly DotGraph DirectedGraph = new DotGraph("DroneGraph", true);
+    public readonly DotGraph DirectedGraph = new DotGraph("drone_graph", true);
 
     public DroneGraph()
     {
-        var rootNode = new DotNode("root") {};
-        var limbNode = new DotNode("limb") {};
-        var limbForwardNode = new DotNode("limb_forward") {};
-        var limbEndNode = new DotNode("limb_end") {};
-        var fixedKneeNode = new DotNode("fixed_knee") {};
-        var fixedForwardKneeNode = new DotNode("fixed_knee_forward") {};
-        var motorKneeNode = new DotNode("motor_knee") {};
-        var motorForwardKneeNode = new DotNode("motor_knee_forward") {};
-        var propellerNode = new DotNode("propeller") {};
+        var rootNode = new DotNode("root") { SocketCount = 4 };
+        var limbNode = new DotNode("limb") { SocketCount = 2 };
+        var limbForwardNode = new DotNode("limb_forward") { SocketCount = 2 };
+        var limbEndNode = new DotNode("limb_end") { SocketCount = 1 };
+        var fixedKneeNode = new DotNode("fixed_knee") { SocketCount = 4 };
+        var fixedForwardKneeNode = new DotNode("fixed_knee_forward") { SocketCount = 4 };
+        var motorKneeNode = new DotNode("motor_knee") { SocketCount = 4 };
+        var motorForwardKneeNode = new DotNode("motor_knee_forward") { SocketCount = 4 };
+        var propellerNode = new DotNode("propeller") { SocketCount = 1 };
         
         DirectedGraph.Elements.Add(rootNode);
         DirectedGraph.Elements.Add(limbNode);
@@ -36,8 +37,6 @@ public class DroneGraph : Singleton<DroneGraph>
         DirectedGraph.Elements.Add(new DotEdge(rootNode, limbNode) { Socket = 2, MirrorSocket = 3, Mirror = true });
         DirectedGraph.Elements.Add(new DotEdge(rootNode, limbEndNode) { Socket = 0});
         DirectedGraph.Elements.Add(new DotEdge(rootNode, limbEndNode) { Socket = 1 });
-        DirectedGraph.Elements.Add(new DotEdge(fixedKneeNode, limbEndNode) { Socket = 2, MirrorSocket = 3 });
-        DirectedGraph.Elements.Add(new DotEdge(fixedKneeNode, limbEndNode) { Socket = 3, MirrorSocket = 2 });
         
 
         DirectedGraph.Elements.Add(new DotEdge(limbNode, fixedKneeNode) { Socket = 1 });
@@ -95,6 +94,6 @@ public class DroneGraph : Singleton<DroneGraph>
         DirectedGraph.Elements.Add(new DotEdge(motorForwardKneeNode, limbEndNode) { Socket = 2, MirrorSocket = 3, Mirror = true });
         DirectedGraph.Elements.Add(new DotEdge(motorForwardKneeNode, limbEndNode) { Socket = 3, MirrorSocket = 2, Mirror = true });
 
-        //File.WriteAllText("myFile.dot", DirectedGraph.Compile());
+        //File.WriteAllText("../data/graph/new_graph.dot", DirectedGraph.Compile());
     }
 }

@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using DotNetGraph;
-using DotNetGraph.Core;
 using DotNetGraph.Edge;
 using DotNetGraph.Node;
-using Unity.VisualScripting;
 using UnityEngine;
+using DronesAssembly.Math;
 
 public class DroneAssembly : Singleton<DroneAssembly>
 {
+    const string MIRROR_TAG = "[mirror]";
+
     [SerializeField] 
     private SerializableDictionary<string, DronePart> label2DroneParts;
         
@@ -47,7 +48,7 @@ public class DroneAssembly : Singleton<DroneAssembly>
 
         if (mirror)
         {
-            dronePartR.gameObject.name += "[mirror]";
+            dronePartR.gameObject.name += MIRROR_TAG;
         }
 
         if (dronePartL != null)
@@ -78,10 +79,37 @@ public class DroneAssembly : Singleton<DroneAssembly>
         return dronePartR;
     }
 
-    public static bool CheckDroneSelfCollision(DronePart drone)
+    public static bool CheckDroneSelfCollision(DroneAgent droneAgent)
     {
-        DronePart[] parts = drone.GetComponentsInChildren<DronePart>();
-        return true;
+        List<DronePart> parts = droneAgent.GetComponentsInChildren<DronePart>().ToList();
+        //parts = parts.FindAll(x => !x.gameObject.name.Contains(MIRROR_TAG));
+
+        for (int i = 0; i < parts.Count; i++)
+        {
+            var partL = parts[i];
+            Collider[] collidersL = partL.GetComponents<Collider>();
+            
+            for (int j = i + 1; j < parts.Count; j++)
+            {
+                var partR = parts[j];
+                Collider[] collidersR = partR.GetComponents<Collider>();
+
+                foreach (Collider colliderL in collidersL)
+                foreach (Collider colliderR in collidersR)
+                {
+                    if (partL.transform.parent == partR.transform 
+                        || partR.transform.parent == partL.transform)
+                        continue;
+
+                    if (BoxSolver.Intersects(
+                            colliderL.transform.position, colliderL.bounds.extents, colliderL.transform.rotation,
+                            colliderR.transform.position, colliderR.bounds.extents, colliderR.transform.rotation))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public DotGraph DroneGenerate()
@@ -148,8 +176,6 @@ public class DroneAssembly : Singleton<DroneAssembly>
             {
                 ignoreSockets.Add(edge.MirrorSocket.SocketIndex);
             }
-            
-            Debug.Log(partNode.Identifier);
             
             graph.Elements.Add(partNode);
             graph.Elements.Add(edge);

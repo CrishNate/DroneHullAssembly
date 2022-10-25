@@ -2,6 +2,8 @@
 using System.Linq;
 using DotNetGraph;
 using DroneHullAssembly.Tools;
+using Unity.MLAgents;
+using Unity.MLAgents.SideChannels;
 using UnityEngine;
 
 public class EnvironmentLoader : MonoBehaviour
@@ -10,6 +12,8 @@ public class EnvironmentLoader : MonoBehaviour
     [SerializeField] private Vector2 offset;
     [SerializeField] private Vector2Int copy;
 
+    private ValidDesignSideChannel validDesignSideChannel;
+    
     void Copy()
     {
         for (int x = 0; x < copy.x; x++)
@@ -19,6 +23,20 @@ public class EnvironmentLoader : MonoBehaviour
                 continue;
             
             Instantiate(environment, environment.transform.position + new Vector3(offset.x * x, 0, offset.y * y), environment.transform.rotation);
+        }
+    }
+    
+    public void Awake()
+    {
+        validDesignSideChannel = new ValidDesignSideChannel();
+        SideChannelManager.RegisterSideChannel(validDesignSideChannel);
+    }
+    
+    public void OnDestroy()
+    {
+        if (Academy.IsInitialized)
+        {
+            SideChannelManager.UnregisterSideChannel(validDesignSideChannel);
         }
     }
     
@@ -38,13 +56,20 @@ public class EnvironmentLoader : MonoBehaviour
 
         int index = args.ToList().FindIndex(x => x.Equals("-d"));
         DotGraph graph = DroneAssembly.ParseFromArgs(args[Range.StartAt(index + 1)]);
-
+        
         //DotGraph graph = DroneAssembly.Instance.DroneGenerate();
-        print(DroneAssembly.HullModelString(graph));
+        //print(DroneAssembly.HullModelString(graph));
         DroneAgent[] drones = FindObjectsOfType<DroneAgent>(true);
+        
         foreach (DroneAgent drone in drones)
         {
             drone.Initialize(graph);
+
+            if (drone == drones[0])
+            {
+                bool validate = !DroneAssembly.CheckDroneSelfCollision(drone);
+                validDesignSideChannel.SendMessage(validate);
+            }
         }
     }
 }

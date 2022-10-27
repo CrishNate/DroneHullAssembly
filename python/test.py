@@ -18,7 +18,7 @@ def MakeEnvironment(design):
     # This is a non-blocking call that only loads the environment.
     unity_env = UnityEnvironment(file_name="../env/DroneHullAssembly",
                                  side_channels=[engine_channel, valid_design_channel],
-                                 no_graphics=False,
+                                 no_graphics=True,
                                  additional_args=["-d"] + design)
 
     return unity_env
@@ -33,16 +33,11 @@ design_pattern = dg.GetDesignPattern(design_graph, dgraph)
 print(' '.join(design_pattern))
 
 unity_env = MakeEnvironment(design_pattern)
+unity_env.reset()
 
-# Binding validate design
-def OnValidateDesign(result: bool):
-    print(result)
-
-
-valid_design_channel.bind_received(OnValidateDesign)
+print(valid_design_channel.get_result_wait())
 
 # Start interacting with the environment.
-unity_env.reset()
 behavior_names = list(unity_env.behavior_specs.keys())
 behavior_name = behavior_names[0]
 spec = unity_env.behavior_specs[behavior_name]

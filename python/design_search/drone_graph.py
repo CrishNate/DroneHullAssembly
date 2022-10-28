@@ -22,18 +22,18 @@ class DGraph:
 
 
 
-def GenerateDesign(design_graph):
+def generate_design(design_graph):
     root = deepcopy(next(x for x in design_graph.get_nodes() if x.get_name() == "root"))
 
     dgraph = DGraph()
     dgraph.add_node(root)
 
-    GeneratePart(dgraph, root, design_graph, 0)
+    generate_part(dgraph, root, design_graph, 0)
 
     return dgraph
 
 
-def GeneratePart(dgraph, node, design_graph, depth):
+def generate_part(dgraph, node, design_graph, depth):
     if int(node.get_attributes()["socket"]) <= 1:
         return
 
@@ -72,10 +72,10 @@ def GeneratePart(dgraph, node, design_graph, depth):
         dgraph.add_node(next_node)
         dgraph.add_edge(edge)
 
-        GeneratePart(dgraph, next_node, design_graph, depth + 1)
+        generate_part(dgraph, next_node, design_graph, depth + 1)
 
 
-def GetDesignPattern(design_graph, dgraph):
+def get_design_pattern(design_graph, dgraph):
     pattern = []
     pattern.append(len(dgraph.get_nodes()))
 

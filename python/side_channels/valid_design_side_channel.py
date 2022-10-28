@@ -22,7 +22,7 @@ class ValidateDesignSideChannel(SideChannel):
         self.result = False
         self.received = False
 
-    def get_result_wait(self):
+    def get_result_blocking(self):
         if not wait_until(lambda: self.received, 10):
             return False
 

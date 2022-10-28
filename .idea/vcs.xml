@@ -3,5 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/extern/DotNetGraph" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/mujoco-py" vcs="Git" />
   </component>
 </project>

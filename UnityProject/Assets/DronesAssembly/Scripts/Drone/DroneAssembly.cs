@@ -8,7 +8,8 @@ using DronesAssembly.Math;
 
 public class DroneAssembly : Singleton<DroneAssembly>
 {
-    const string MIRROR_TAG = "[mirror]";
+    static string MIRROR_TAG = "[mirror]";
+    public static bool DebugVisual = false;
 
     [SerializeField] 
     private SerializableDictionary<string, DronePart> label2DroneParts;

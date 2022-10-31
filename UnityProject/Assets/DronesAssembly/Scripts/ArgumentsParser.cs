@@ -44,8 +44,8 @@ namespace DroneHullAssembly.Tools
                 var argumentParser = _argumentParsers.Find(x => x.Equals(args[i]));
                 if (argumentParser == null) 
                     continue;
-                
-                argumentParser.Execute(args[i + 1]);
+
+                argumentParser.Execute(i + 1 < args.Length ? args[i + 1] : string.Empty);
             }
         }
     }

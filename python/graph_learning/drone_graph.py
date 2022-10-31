@@ -97,3 +97,47 @@ def get_design_pattern(design_graph, dgraph):
         pattern.append(next(i for i, v in enumerate(dgraph.get_nodes()) if v.obj_dict == edge.obj_dict["points_ids"][1]))
 
     return [str(i) for i in pattern]
+
+
+def dgraph_from_pattern(design_graph, pattern):
+    if len(pattern) == 0:
+        print("[Error]: pattern is empty")
+        return
+
+    pattern = [int(n) for n in pattern]
+
+    dgraph = DGraph()
+    index = 0
+
+    partsCount = pattern[index]
+    index += 1
+
+    nodes = design_graph.get_nodes()
+    edges = design_graph.get_edges()
+    while index <= partsCount:
+        node = nodes[pattern[index]]
+        node = deepcopy(node)
+        index += 1
+
+        dgraph.add_node(node)
+
+    while index < len(pattern) - 1:
+        edgeIndex = pattern[index] - len(nodes) + 1
+        index += 1
+
+        leftIndex = pattern[index]
+        leftNode = dgraph.get_nodes()[leftIndex]
+        index += 1
+
+        rightIndex = pattern[index]
+        rightNode = dgraph.get_nodes()[rightIndex]
+        index += 1
+
+        edge = edges[edgeIndex]
+        edge = deepcopy(edge)
+        edge.obj_dict['points_ids'] = [ leftNode.obj_dict, rightNode.obj_dict ]
+
+        dgraph.add_edge(edge)
+
+    return dgraph
+

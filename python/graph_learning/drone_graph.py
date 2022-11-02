@@ -21,6 +21,15 @@ class DGraph:
         return self.edges
 
 
+class TreeNode:
+    childs = {}
+    parent = None
+
+    graph_node = None
+
+    def add_child(self, socket, node):
+        self.childs[socket] = node
+
 
 def generate_design(design_graph):
     root = deepcopy(next(x for x in design_graph.get_nodes() if x.get_name() == "root"))

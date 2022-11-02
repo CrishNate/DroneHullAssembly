@@ -38,7 +38,7 @@ def make_unity_env(pattern, rank = 0):
     Create a wrapped, monitored Unity environment.
     """
     engine_channel = EngineConfigurationChannel()
-    engine_channel.set_configuration(EngineConfig(600, 600, 1, 5.0, -1, 30))
+    engine_channel.set_configuration(EngineConfig(600, 600, 1, 1.0, -1, 30))
     unity_env = UnityEnvironment(file_name="../env/DroneHullAssembly",
                                  side_channels=[engine_channel, valid_design_channel],
                                  no_graphics=rank != 1,
@@ -106,6 +106,7 @@ def search_algo(args, design_graph):
                     verbose=1,
                     tensorboard_log=path_vars.LOG_DIR,
                     n_steps=1000,
+                    batch_size=256,
                     learning_rate=1e-3)
         model.learn(total_timesteps=args.num_steps)
 
@@ -116,6 +117,7 @@ def search_algo(args, design_graph):
         print("Eval pattern: ",' '.join(design_pattern))
         #print("Eval score: ", model)
         del model
+        break
 
 def main(args):
     graphs = pydot.graph_from_dot_file(args.grammar_file)
@@ -141,6 +143,6 @@ if __name__ == '__main__':
     setattr(args, "num_steps", 1_000_000)
     setattr(args, "num_iterations", 2000)
     setattr(args, "num_envs", 20)
-    setattr(args, "seed", None)
+    setattr(args, "seed", 1)
 
     main(args)

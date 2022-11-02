@@ -21,7 +21,7 @@ public class DroneAgent : Agent
     private Vector3 m_CachedPosition;
         
     const float MaxDist = 5;
-    const float DistanceThreshold = 1;
+    const float DistanceThreshold = 0.5f;
 
     public void Initialize(DotGraph graph)
     {
@@ -68,9 +68,14 @@ public class DroneAgent : Agent
         float angle = transform.up.y;
         //float matchDir = GetMatchingVelocityReward(_targetTransform.position - transform.position, m_Rigidbody.velocity);
 
-        float dist = (_targetTransform.position - transform.position).magnitude;
+        Vector3 dir = (_targetTransform.position - transform.position);
         
-        AddReward(dist < DistanceThreshold ? 1 : -dist / MaxDist * 0.5f);
+        float dist = dir.magnitude;
+        float dir_angle = Vector3.Dot(m_Rigidbody.velocity.normalized * Math.Min(1.0f, m_Rigidbody.velocity.magnitude),
+                                        dir.normalized * Math.Min(1.0f, dir.magnitude));
+        
+        AddReward(dist < DistanceThreshold ? 1 : -dist / MaxDist * 0.5f * (dir_angle * -0.5f + 0.5f));
+        //AddReward(Mathf.Min(0.1f, Vector3.Dot(m_Rigidbody.velocity, dir.normalized * Math.Min(10.0f, dir.magnitude)) * 0.05f));
         AddReward(-(1 - angle));
         AddReward(m_Rigidbody.velocity.magnitude * -0.1f);
         AddReward(m_Rigidbody.angularVelocity.magnitude * -0.1f);

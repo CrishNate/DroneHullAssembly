@@ -18,12 +18,14 @@ from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 # Unity envs
 from mlagents_envs.environment import UnityEnvironment
 from gym_unity.envs import UnityToGymWrapper
+from gym import logger
 
 # ML
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3 import PPO
 
 valid_design_channel = ValidateDesignSideChannel()
@@ -33,15 +35,17 @@ try:
 except ImportError:
     MPI = None
 
+logger.set_level(40)
+
 def make_unity_env(pattern, rank = 0):
     """
     Create a wrapped, monitored Unity environment.
     """
     engine_channel = EngineConfigurationChannel()
-    engine_channel.set_configuration(EngineConfig(600, 600, 1, 1.0, -1, 30))
+    engine_channel.set_configuration(EngineConfig(600, 600, 1, 5.0, -1, 30))
     unity_env = UnityEnvironment(file_name="../env/DroneHullAssembly",
                                  side_channels=[engine_channel, valid_design_channel],
-                                 no_graphics=rank != 1,
+                                 no_graphics=rank!=1,
                                  worker_id=rank,
                                  additional_args=["-e", "1,1"] + ["-d"] + pattern)
 
@@ -55,8 +59,8 @@ def make_env(pattern, num_env, visual, start_index=0):
     def _env(rank): # pylint: disable=C0111
         def _thunk():
             unity_env = make_unity_env(pattern, rank)
-            env = UnityToGymWrapper(unity_env)
-            #env = Monitor(env, log_dir and os.path.join(log_dir, str(rank)))
+            env = UnityToGymWrapper(unity_env, allow_multiple_obs=False)
+            env = Monitor(env, path_vars.LOG_DIR)
             return env
         return _thunk
 
@@ -87,35 +91,43 @@ def search_algo(args, design_graph):
             patterns.append(design_pattern)
             print("Design already exist, re-generation...")
 
-        print("Begin eval pattern design: ",' '.join(design_pattern))
-
         # Validating design
+        valid_design_channel.reset()
         unity_env = make_unity_env(design_pattern)
-
         unity_env.reset()
+
         if not valid_design_channel.get_result_blocking():
+            print("Invalid design: ", ' '.join(design_pattern))
             unity_env.close()
             return
 
         unity_env.close()
 
         # Training design
+        print("Begin eval pattern design: ",' '.join(design_pattern))
+
         env = make_env(design_pattern, args.num_envs, True)
 
         model = PPO("MlpPolicy", env,
                     verbose=1,
                     tensorboard_log=path_vars.LOG_DIR,
-                    n_steps=1000,
-                    batch_size=256,
-                    learning_rate=1e-3)
-        model.learn(total_timesteps=args.num_steps)
+                    n_steps=100,
+                    batch_size=200,
+                    policy_kwargs={'net_arch': [dict(pi=[256, 256], vf=[256, 256])]},
+                    learning_rate=1e-3,
+                    device="auto")
+        model.learn(total_timesteps=args.num_steps, tb_log_name="1_reward_1_dist_n_steps_100_batch_200")
 
         pattern_code = "".join(design_pattern)
         model.save(os.path.join(path_vars.MODELS_DIR, pattern_code))
 
         print("Eval time: ", time.time() - t_start)
         print("Eval pattern: ",' '.join(design_pattern))
-        #print("Eval score: ", model)
+
+        mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10, deterministic=True)
+        print(f"Mean Reward={mean_reward:.2f} +/- {std_reward}")
+
+        model.env.close()
         del model
         break
 
@@ -140,7 +152,7 @@ if __name__ == '__main__':
 
     args = argparse.Namespace()
     setattr(args, "grammar_file", "../data/designs/graph_23oct.dot")
-    setattr(args, "num_steps", 1_000_000)
+    setattr(args, "num_steps", 800_000)
     setattr(args, "num_iterations", 2000)
     setattr(args, "num_envs", 20)
     setattr(args, "seed", 1)

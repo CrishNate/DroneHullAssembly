@@ -378,7 +378,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   environment: {fileID: 1237025627}
   offset: {x: 30, y: 30}
-  copy: {x: 8, y: 8}
+  copy: {x: 1, y: 1}
 --- !u!4 &1021171256
 Transform:
   m_ObjectHideFlags: 0

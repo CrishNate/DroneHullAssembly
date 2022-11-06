@@ -71,13 +71,9 @@ public class DroneAgent : Agent
         Vector3 dir = (_targetTransform.position - transform.position);
         
         float dist = dir.magnitude;
-        float dir_angle = Vector3.Dot(m_Rigidbody.velocity.normalized * Math.Min(1.0f, m_Rigidbody.velocity.magnitude),
-                                        dir.normalized * Math.Min(1.0f, dir.magnitude));
-        
-        AddReward(dist < DistanceThreshold ? 1 : -dist / MaxDist * 0.5f * (dir_angle * -0.5f + 0.5f));
-        //AddReward(Mathf.Min(0.1f, Vector3.Dot(m_Rigidbody.velocity, dir.normalized * Math.Min(10.0f, dir.magnitude)) * 0.05f));
+        AddReward(dist < DistanceThreshold ? 1 : -dist / MaxDist);
         AddReward(-(1 - angle));
-        AddReward(m_Rigidbody.velocity.magnitude * -0.1f);
+        AddReward(m_Rigidbody.velocity.magnitude * -0.2f);
         AddReward(m_Rigidbody.angularVelocity.magnitude * -0.1f);
 
         if (angle < 0)

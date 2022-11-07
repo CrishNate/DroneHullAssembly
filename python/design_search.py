@@ -42,7 +42,7 @@ def make_unity_env(pattern, rank = 0):
     Create a wrapped, monitored Unity environment.
     """
     engine_channel = EngineConfigurationChannel()
-    engine_channel.set_configuration(EngineConfig(600, 600, 1, 5.0, -1, 30))
+    engine_channel.set_configuration(EngineConfig(600, 600, 1, 1.0, -1, 30))
     unity_env = UnityEnvironment(file_name="../env/DroneHullAssembly",
                                  side_channels=[engine_channel, valid_design_channel],
                                  no_graphics=rank!=1,
@@ -70,6 +70,29 @@ def make_env(pattern, num_env, visual, start_index=0):
         rank = MPI.COMM_WORLD.Get_rank() if MPI else 0
         return DummyVecEnv([_env(rank + i) for i in range(num_env)])
 
+
+def linear_schedule(initial_value, result_value):
+    """
+    Linear learning rate schedule.
+    :param result_value: (float or str)
+    :param initial_value: (float or str)
+    :return: (function)
+    """
+    if isinstance(initial_value, str):
+        initial_value = float(initial_value)
+
+    if isinstance(result_value, str):
+        result_value = float(result_value)
+
+    def func(progress):
+        """
+        Progress will decrease from 1 (beginning) to 0
+        :param progress: (float)
+        :return: (float)
+        """
+        return initial_value - (progress * progress) * (initial_value - result_value)
+
+    return func
 
 def search_algo(args, design_graph):
     if args.seed is not None:
@@ -110,13 +133,13 @@ def search_algo(args, design_graph):
 
         model = PPO("MlpPolicy", env,
                     verbose=1,
-                    tensorboard_log=path_vars.LOG_DIR,
+                    tensorboard_log=path_vars.LOG_DIR if args.log else None,
                     n_steps=100,
                     batch_size=200,
                     policy_kwargs={'net_arch': [dict(pi=[256, 256], vf=[256, 256])]},
                     learning_rate=1e-3,
                     device="auto")
-        model.learn(total_timesteps=args.num_steps, tb_log_name="1_reward_1_dist_n_steps_100_batch_200")
+        model.learn(total_timesteps=args.num_steps, tb_log_name="flying_base_only_velocity")
 
         pattern_code = "".join(design_pattern)
         model.save(os.path.join(path_vars.MODELS_DIR, pattern_code))
@@ -130,6 +153,7 @@ def search_algo(args, design_graph):
         model.env.close()
         del model
         break
+
 
 def main(args):
     graphs = pydot.graph_from_dot_file(args.grammar_file)
@@ -147,14 +171,16 @@ if __name__ == '__main__':
     # parser.add_argument('-i', '--num-iterations', type = int, default=2000, help='Number of iterations')
     # parser.add_argument('-j', '--num-envs', type = int, default=8, help='Number of environments')
     # parser.add_argument('-s', '--seed', type = int, default=None, help='seed')
+    # parser.add_argument('-l', '--log', type = bool, default=False, help='enable logging')
     #
     # args = parser.parse_args()
 
     args = argparse.Namespace()
     setattr(args, "grammar_file", "../data/designs/graph_23oct.dot")
-    setattr(args, "num_steps", 800_000)
+    setattr(args, "num_steps", 500_000)
     setattr(args, "num_iterations", 2000)
     setattr(args, "num_envs", 20)
     setattr(args, "seed", 1)
+    setattr(args, "log", True)
 
     main(args)

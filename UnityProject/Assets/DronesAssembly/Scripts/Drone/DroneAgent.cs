@@ -19,9 +19,12 @@ public class DroneAgent : Agent
     
     private Rigidbody m_Rigidbody;
     private Vector3 m_CachedPosition;
-        
-    const float MaxDist = 5;
+    private Vector3 m_WindForce = Vector3.forward * 0.0f;
+
+    const float MaxDist = 10;
     const float DistanceThreshold = 0.5f;
+    const float TargetWalkingSpeed = 5.0f;
+    
 
     public void Initialize(DotGraph graph)
     {
@@ -35,6 +38,8 @@ public class DroneAgent : Agent
         m_Motors.Clear();
         m_PropellerParts.Clear();
         m_Parts.Clear();
+
+        float totalMass = 0;
         
         foreach (DronePart part in GetComponentsInChildren<DronePart>())
         {
@@ -51,7 +56,11 @@ public class DroneAgent : Agent
                     m_Motors.Add(motorKneePart);
                     break;
             }
+
+            totalMass += part.mass;
         }
+
+        m_Rigidbody.mass = totalMass;
         
         // 3 - target position offset
         // 3 - velocity
@@ -69,27 +78,31 @@ public class DroneAgent : Agent
         //float matchDir = GetMatchingVelocityReward(_targetTransform.position - transform.position, m_Rigidbody.velocity);
 
         Vector3 dir = (_targetTransform.position - transform.position);
-        
-        float dist = dir.magnitude;
-        AddReward(dist < DistanceThreshold ? 1 : -dist / MaxDist);
-        AddReward(-(1 - angle));
-        AddReward(m_Rigidbody.velocity.magnitude * -0.2f);
-        AddReward(m_Rigidbody.angularVelocity.magnitude * -0.1f);
 
-        if (angle < 0)
-        {
-            AddReward(-1000);
-            EndEpisode();
-            return;
-        }
+        AddReward(GetMatchingVelocityReward(dir.normalized * Math.Min(dir.magnitude, TargetWalkingSpeed), m_Rigidbody.velocity));
+        AddReward(angle * 0.2f);
+        AddReward(m_Rigidbody.velocity.magnitude * -0.05f);
+        AddReward(m_Rigidbody.angularVelocity.magnitude * -0.05f);
 
         if (Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(_targetTransform.position.x, _targetTransform.position.z)) > MaxDist
             || transform.position.y - _targetTransform.position.y > MaxDist)
         {
-            AddReward(-1000);
+            AddReward(-10);
             EndEpisode();
             return;
         }
+        
+        m_Rigidbody.AddForce(m_WindForce, ForceMode.Force);
+    }
+    
+    public float GetMatchingVelocityReward(Vector3 velocityGoal, Vector3 actualVelocity)
+    {
+        //distance between our actual velocity and goal velocity
+        var velDeltaMagnitude = Mathf.Clamp(Vector3.Distance(actualVelocity, velocityGoal), 0, TargetWalkingSpeed);
+
+        //return the value on a declining sigmoid shaped curve that decays from 1 to 0
+        //This reward will approach 1 if it matches perfectly and approach zero as it deviates
+        return Mathf.Pow(1 - Mathf.Pow(velDeltaMagnitude / TargetWalkingSpeed, 2), 2);
     }
     
     public override void OnEpisodeBegin()
@@ -102,10 +115,6 @@ public class DroneAgent : Agent
 
         transform.position = m_CachedPosition;
         transform.rotation = Quaternion.identity;
-        
-        //Vector2 randomPos = Random.insideUnitCircle;
-        //transform.position = m_CachedPosition + new Vector3(randomPos.x, 0, randomPos.y) * (MaxDist - 1);
-        //transform.rotation = Quaternion.Euler(Random.Range(-20.0f, 20.0f), Random.Range(0.0f, 360.0f), Random.Range(-20.0f, 20.0f));
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -149,7 +158,7 @@ public class DroneAgent : Agent
 
     private void OnCollisionEnter(Collision col)
     {
-        AddReward(-1000);
+        AddReward(-10);
         EndEpisode();
     }
 }

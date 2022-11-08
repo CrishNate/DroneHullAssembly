@@ -68,7 +68,7 @@ public class DroneAssembly : Singleton<DroneAssembly>
         foreach (DotEdge dotEdge in dotEdges)
         {
             int socketTo = (mirror && dotEdge.MirrorSocket != null ? dotEdge.MirrorSocket.SocketIndex : dotEdge.Socket.SocketIndex);
-            int socketFrom = dotEdge.SocketTo?.SocketIndex ?? 0;
+            int socketFrom = 0;
             AssemblePart(dotEdge.Right as DotNode, dronePartR, socketTo, socketFrom, edges, parent, mirror);
 
             if (dotEdge.Mirror is { SocketMirror: true })
@@ -203,30 +203,30 @@ public class DroneAssembly : Singleton<DroneAssembly>
                     break;
             }
         }
-
+        
         List<int> result = new List<int>();
-        result.Add(nodes.Count);
-
-        foreach (DotNode node in nodes)
+        
+        Queue<DotNode> pendingNodes = new Queue<DotNode>();
+        pendingNodes.Enqueue(nodes.Find(x => x.Identifier == "root"));
+        
+        while (pendingNodes.Count > 0)
         {
+            DotNode node = pendingNodes.Dequeue();
             result.Add(DroneGraph.Instance.DirectedGraph.Elements.FindIndex(x => (x as DotNode)?.Identifier == node.Identifier));
-        }
-
-        foreach (DotEdge edge in edges)
-        {
-            result.Add(DroneGraph.Instance.DirectedGraph.Elements.FindIndex(x =>
-                (x as DotEdge)?.Socket.SocketIndex == edge.Socket.SocketIndex
-                && (((DotEdge)x).Left as DotNode)?.Identifier == (edge.Left as DotNode)?.Identifier
-                && (((DotEdge)x).Right as DotNode)?.Identifier == (edge.Right as DotNode)?.Identifier));
             
-            result.Add(nodes.FindIndex(x=> x == edge.Left));
-            result.Add(nodes.FindIndex(x=> x == edge.Right));
+            GetConnectedNodes(node, edges).ForEach(x => pendingNodes.Enqueue(x));
         }
 
         return string.Join(" ", result);
     }
 
-    public static DotGraph ParseFromArgs(string[] args)
+    private static List<DotNode> GetConnectedNodes(DotNode node, List<DotEdge> edges)
+    {
+        List<DotNode> connectedNodes = edges.FindAll(x => (x.Left as DotNode) == node).ConvertAll(x => x.Right as DotNode);
+        return connectedNodes;
+    }
+
+    public static DotGraph ParseFromArgsOld(string[] args)
     {
         int[] dataArray = args.Select(int.Parse).ToArray();
 
@@ -264,5 +264,63 @@ public class DroneAssembly : Singleton<DroneAssembly>
         }
 
         return droneGraph;
+    }
+    
+    public static DotGraph ParseFromArgs(string[] args)
+    {
+        int[] dataArray = args.Select(int.Parse).ToArray();
+
+        if (dataArray.Length == 0)
+        {
+            Debug.LogError($"Could not parse drone from string");
+            return null;
+        }
+
+        List<DotEdge> edges = DroneGraph.Instance.DirectedGraph.Elements.FindAll(x => x is DotEdge).ConvertAll(x => x as DotEdge);
+        
+        DotGraph droneGraph = new DotGraph();
+        Queue<DotNode> pendingNodes = new Queue<DotNode>();
+
+        int index = 0;
+        DotNode nodeRoot = DroneGraph.Instance.DirectedGraph.Elements[dataArray[index++]] as DotNode;
+        nodeRoot = nodeRoot.Clone() as DotNode;
+        droneGraph.Elements.Add(nodeRoot);
+        pendingNodes.Enqueue(nodeRoot);
+
+        while (pendingNodes.Count > 0)
+        {
+            DotNode node = pendingNodes.Dequeue();
+            ProcessDesignArgs(droneGraph, edges, node, dataArray, ref index).ForEach(x => pendingNodes.Enqueue(x));
+        }
+
+        return droneGraph;
+    }
+
+    private static List<DotNode> ProcessDesignArgs(DotGraph droneGraph, List<DotEdge> edges, DotNode node, int[] dataArray, ref int index)
+    {
+        List<DotNode> nodes = new List<DotNode>();
+
+        if (!DroneGraph.Instance.AvailableSockets.TryGetValue(node.Identifier, out var sockets))
+            return nodes;
+
+        foreach (var socket in sockets)
+        {
+            DotNode childNode = DroneGraph.Instance.DirectedGraph.Elements[dataArray[index++]] as DotNode;
+            childNode = childNode.Clone() as DotNode;
+            droneGraph.Elements.Add(childNode);
+            
+            DotEdge edge = edges.Find(x => (x.Left as DotNode).Identifier == node.Identifier 
+                                           && (x.Right as DotNode).Identifier == childNode.Identifier
+                                           && x.Socket.SocketIndex == socket);
+            
+            edge = edge.Clone() as DotEdge;
+            edge.Left = node;
+            edge.Right = childNode;
+            droneGraph.Elements.Add(edge);
+            
+            nodes.Add(childNode);
+        }
+
+        return nodes;
     }
 }

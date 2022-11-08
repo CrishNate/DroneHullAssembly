@@ -139,7 +139,7 @@ def search_algo(args, design_graph):
                     policy_kwargs={'net_arch': [dict(pi=[256, 256], vf=[256, 256])]},
                     learning_rate=1e-3,
                     device="auto")
-        model.learn(total_timesteps=args.num_steps, tb_log_name="flying_base_only_velocity")
+        model.learn(total_timesteps=args.num_steps, tb_log_name="flying_base_with_wind/base/")
 
         pattern_code = "".join(design_pattern)
         model.save(os.path.join(path_vars.MODELS_DIR, pattern_code))
@@ -181,6 +181,6 @@ if __name__ == '__main__':
     setattr(args, "num_iterations", 2000)
     setattr(args, "num_envs", 20)
     setattr(args, "seed", 1)
-    setattr(args, "log", True)
+    setattr(args, "log", False)
 
     main(args)

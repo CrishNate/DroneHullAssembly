@@ -19,10 +19,9 @@ public class DroneAgent : Agent
     
     private Rigidbody m_Rigidbody;
     private Vector3 m_CachedPosition;
-    private Vector3 m_WindForce = Vector3.forward * 0.0f;
+    private Vector3 m_WindForce = Vector3.forward * 10.0f;
 
     const float MaxDist = 10;
-    const float DistanceThreshold = 0.5f;
     const float TargetWalkingSpeed = 5.0f;
     
 

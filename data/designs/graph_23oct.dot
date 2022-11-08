@@ -35,20 +35,14 @@ digraph drone_graph {
                 motor_knee->limb_end[socket = 3, socket_mirror = 2];
                 fixed_knee_forward->limb_forward[socket = 1];
                 fixed_knee_forward->limb[socket = 2, socket_mirror = 3, mirror = 1];
-                fixed_knee_forward->limb[socket = 3, socket_mirror = 2, mirror = 1];
                 fixed_knee_forward->propeller[socket = 1];
                 fixed_knee_forward->propeller[socket = 2, socket_mirror = 3, mirror = 1];
-                fixed_knee_forward->propeller[socket = 3, socket_mirror = 2, mirror = 1];
                 fixed_knee_forward->limb_end[socket = 1];
                 fixed_knee_forward->limb_end[socket = 2, socket_mirror = 3, mirror = 1];
-                fixed_knee_forward->limb_end[socket = 3, socket_mirror = 2, mirror = 1];
                 motor_knee_forward->limb_forward[socket = 1];
                 motor_knee_forward->limb[socket = 2, socket_mirror = 3, mirror = 1];
-                motor_knee_forward->limb[socket = 3, socket_mirror = 2, mirror = 1];
                 motor_knee_forward->propeller[socket = 1];
                 motor_knee_forward->propeller[socket = 2, socket_mirror = 3, mirror = 1];
-                motor_knee_forward->propeller[socket = 3, socket_mirror = 2, mirror = 1];
                 motor_knee_forward->limb_end[socket = 1];
                 motor_knee_forward->limb_end[socket = 2, socket_mirror = 3, mirror = 1];
-                motor_knee_forward->limb_end[socket = 3, socket_mirror = 2, mirror = 1];
             }

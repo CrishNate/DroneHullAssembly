@@ -81,12 +81,6 @@ namespace DotNetGraph.Edge
             get => GetAttribute<DotSocketAttribute>();
             set => SetAttribute(value);
         }
-
-        public DotSocketToAttribute SocketTo
-        {
-            get => GetAttribute<DotSocketToAttribute>();
-            set => SetAttribute(value);
-        }
         
         public DotSocketMirrorAttribute MirrorSocket
         {

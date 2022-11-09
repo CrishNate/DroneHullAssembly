@@ -3,6 +3,65 @@ from copy import copy, deepcopy
 import pydot
 import random
 
+class DNode:
+
+    def __init__(self, design_graph, sockets_dict, node, dnode, pending_nodes, socket):
+        self.design_graph = design_graph
+        self.sockets_dict = sockets_dict
+        self.node = node
+        self.depth = 0
+
+        if dnode:
+            self.pending_nodes = copy(pending_nodes)
+            self.pending_nodes[dnode] = copy(pending_nodes[dnode])
+            self.pending_nodes[dnode].remove(socket)
+
+            if len(self.pending_nodes[dnode]) == 0:
+                del self.pending_nodes[dnode]
+
+            self.depth = dnode.depth + 1
+        else:
+            self.pending_nodes = dict()
+
+        if self.node.get_name() in sockets_dict:
+            sockets = sockets_dict[self.node.get_name()]
+            if len(sockets) > 0:
+                self.pending_nodes[self] = sockets
+
+    def is_terminal(self):
+        return len(self.pending_nodes) == 0
+
+    def find_children(self):
+        pending_dnode = next(iter(self.pending_nodes))
+        pending_socket = self.pending_nodes[pending_dnode][0]
+
+        # Getting all possible entropy edges for current node
+        entropy_edges = list(filter(lambda x: x.get_source() == pending_dnode.node.get_name()
+                                              and (x.get_attributes()["socket"] is None
+                                              or x.get_attributes()["socket"] == pending_socket),
+                                    self.design_graph.get_edges()))
+
+        if len(entropy_edges) == 0:
+            return []
+
+        # Filtering edge that contain propeller end point
+        propeller_edge = next((x for x in entropy_edges if x.get_destination() == "propeller"), None)
+
+        if pending_dnode.depth >= 5 and propeller_edge is not None:
+            next_node = next(x for x in self.design_graph.get_nodes() if propeller_edge.get_destination() == x.get_name())
+            next_dnode = DNode(self.design_graph, self.sockets_dict, next_node, pending_dnode, self.pending_nodes, pending_socket)
+            return [next_dnode]
+        else:
+            dnodes = []
+            for e in entropy_edges:
+                next_node = next(x for x in self.design_graph.get_nodes() if e.get_destination() == x.get_name())
+                next_dnode = DNode(self.design_graph, self.sockets_dict, next_node, pending_dnode, self.pending_nodes, pending_socket)
+                dnodes.append(next_dnode)
+            return dnodes
+
+
+    def get_random_child(self):
+        return random.choice(self.find_children())
 
 class DGraph:
     nodes = []
@@ -21,16 +80,7 @@ class DGraph:
         return self.edges
 
 
-class TreeNode:
-    childs = {}
-    parent = None
-
-    graph_node = None
-
-    def add_child(self, socket, node):
-        self.childs[socket] = node
-
-
+# Generation block
 def generate_design(design_graph):
     root = deepcopy(next(x for x in design_graph.get_nodes() if x.get_name() == "root"))
 
@@ -54,7 +104,8 @@ def generate_part(dgraph, node, design_graph, depth):
 
         # Getting all possible entropy edges for current node
         entropy_edges = list(filter(lambda x: x.get_source() == node.get_name()
-                                              and (x.get_attributes()["socket"] is None or int(x.get_attributes()["socket"]) == i),
+                                              and (x.get_attributes()["socket"] is None
+                                              or int(x.get_attributes()["socket"]) == i),
                                     design_graph.get_edges()))
 
         if len(entropy_edges) == 0:
@@ -122,7 +173,7 @@ def dgraph_from_pattern(design_graph, pattern):
 
     nodes = design_graph.get_nodes()
     edges = design_graph.get_edges()
-    sockets = get_sockets_dict(design_graph)
+    sockets_dict = get_sockets_dict(design_graph)
 
     pending_nodes = []
     root_node = deepcopy(next(v for v in nodes if v.get_name() == "root"))
@@ -131,7 +182,7 @@ def dgraph_from_pattern(design_graph, pattern):
 
     while len(pending_nodes) > 0:
         node = pending_nodes.pop(0)
-        child_nodes, index = process_design_args(dgraph, edges, sockets, node, pattern, index)
+        child_nodes, index = process_design_args(dgraph, edges, sockets_dict, node, pattern, index)
 
         for x in child_nodes:
             pending_nodes.append(x)
@@ -156,13 +207,13 @@ def get_sockets_dict(design_graph):
     return sockets
 
 
-def process_design_args(dgraph, edges, sockets, node, pattern, index):
+def process_design_args(dgraph, edges, sockets_dict, node, pattern, index):
     nodes = []
 
-    if node.get_name() not in sockets:
+    if node.get_name() not in sockets_dict:
         return nodes
 
-    for socket in sockets[node.get_name()]:
+    for socket in sockets_dict[node.get_name()]:
         child_node = deepcopy(nodes[pattern[index]])
         dgraph.add_node(child_node)
         index += 1
@@ -177,47 +228,3 @@ def process_design_args(dgraph, edges, sockets, node, pattern, index):
         nodes.append(node)
 
     return nodes, index
-
-
-def dgraph_from_pattern_old(design_graph, pattern):
-    if len(pattern) == 0:
-        print("[Error]: pattern is empty")
-        return
-
-    pattern = [int(n) for n in pattern]
-
-    dgraph = DGraph()
-    index = 0
-
-    partsCount = pattern[index]
-    index += 1
-
-    nodes = design_graph.get_nodes()
-    edges = design_graph.get_edges()
-    while index <= partsCount:
-        node = nodes[pattern[index]]
-        node = deepcopy(node)
-        index += 1
-
-        dgraph.add_node(node)
-
-    while index < len(pattern) - 1:
-        edgeIndex = pattern[index] - len(nodes) + 1
-        index += 1
-
-        leftIndex = pattern[index]
-        leftNode = dgraph.get_nodes()[leftIndex]
-        index += 1
-
-        rightIndex = pattern[index]
-        rightNode = dgraph.get_nodes()[rightIndex]
-        index += 1
-
-        edge = edges[edgeIndex]
-        edge = deepcopy(edge)
-        edge.obj_dict['points_ids'] = [ leftNode, rightNode ]
-
-        dgraph.add_edge(edge)
-
-    return dgraph
-

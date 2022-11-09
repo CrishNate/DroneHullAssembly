@@ -26,6 +26,7 @@ from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold, StopTrainingOnNoModelImprovement
 from stable_baselines3 import PPO
 
 valid_design_channel = ValidateDesignSideChannel()
@@ -114,6 +115,8 @@ def search_algo(args, design_graph):
             patterns.append(design_pattern)
             print("Design already exist, re-generation...")
 
+        design_pattern = '0 3 2 1 8 6 3 1 3 1 6 1 3 3 8'.split(' ')
+
         # Validating design
         valid_design_channel.reset()
         unity_env = make_unity_env(design_pattern)
@@ -139,7 +142,17 @@ def search_algo(args, design_graph):
                     policy_kwargs={'net_arch': [dict(pi=[256, 256], vf=[256, 256])]},
                     learning_rate=1e-3,
                     device="auto")
-        model.learn(total_timesteps=args.num_steps, tb_log_name="flying_base_with_wind/base/")
+
+        callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=900, verbose=1)
+        stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=6, min_evals=5, verbose=1)
+        eval_callback = EvalCallback(env,
+                                     callback_on_new_best=callback_on_best,
+                                     callback_after_eval=stop_train_callback,
+                                     verbose=1)
+
+        model.learn(total_timesteps=args.num_steps,
+                    tb_log_name="flying_base_with_wind/base/",
+                    callback=eval_callback)
 
         pattern_code = "".join(design_pattern)
         model.save(os.path.join(path_vars.MODELS_DIR, pattern_code))
@@ -177,7 +190,7 @@ if __name__ == '__main__':
 
     args = argparse.Namespace()
     setattr(args, "grammar_file", "../data/designs/graph_23oct.dot")
-    setattr(args, "num_steps", 500_000)
+    setattr(args, "num_steps", 1_000_000)
     setattr(args, "num_iterations", 2000)
     setattr(args, "num_envs", 20)
     setattr(args, "seed", 1)

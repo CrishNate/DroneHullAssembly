@@ -19,7 +19,7 @@ public class DroneAgent : Agent
     
     private Rigidbody m_Rigidbody;
     private Vector3 m_CachedPosition;
-    private Vector3 m_WindForce = Vector3.forward * 10.0f;
+    private Vector3 m_WindForce = Vector3.forward * 0.0f;
 
     const float MaxDist = 10;
     const float TargetWalkingSpeed = 5.0f;
@@ -91,7 +91,7 @@ public class DroneAgent : Agent
             return;
         }
         
-        m_Rigidbody.AddForce(m_WindForce, ForceMode.Force);
+        //m_Rigidbody.AddForce(m_WindForce, ForceMode.Force);
     }
     
     public float GetMatchingVelocityReward(Vector3 velocityGoal, Vector3 actualVelocity)

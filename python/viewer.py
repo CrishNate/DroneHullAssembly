@@ -1,5 +1,5 @@
 import argparse
-import sys
+
 import pydot
 
 from gym_unity.envs import UnityToGymWrapper
@@ -24,6 +24,16 @@ def viewer(design_graph, model_file, pattern):
     env = UnityToGymWrapper(unity_env)
     obs = env.reset()
 
+    # view model
+    while model_file is None:
+        action = env.action_space.sample()
+        obs, rewards, dones, info = env.step(action)
+
+        if dones:
+            env.reset()
+
+
+    # view trained model
     model = PPO.load(model_file)
 
     while True:
@@ -46,8 +56,9 @@ if __name__ == '__main__':
 
     args = argparse.Namespace()
     setattr(args, "grammar_file", "../data/designs/graph_23oct.dot")
-    setattr(args, "model_file", "../results/models/90258183189011812372335241745130611071778.zip")
-    setattr(args, "rule_sequence", "9 0 2 5 8 1 8 3 1 8 9 0 1 18 1 2 37 2 3 35 2 4 17 4 5 13 0 6 11 0 7 17 7 8".split(" "))
+    setattr(args, "model_file", "../results/models/032186313161338.zip")
+    #setattr(args, "model_file", None)
+    setattr(args, "rule_sequence", "0 3 2 1 8 6 3 1 3 1 6 1 3 3 8".split(" "))
 
     graphs = pydot.graph_from_dot_file(args.grammar_file)
     design_graph = graphs[0]

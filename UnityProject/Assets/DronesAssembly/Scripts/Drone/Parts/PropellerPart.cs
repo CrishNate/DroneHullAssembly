@@ -27,21 +27,28 @@ public class PropellerPart : DronePart
 
     public void FixedUpdate()
     {
+        m_CurrentThrust = Mathf.Lerp(m_CurrentThrust, m_Value, Time.fixedDeltaTime * thrustResponse);
+        
         if (DroneAssembly.DebugVisual)
         {
-            float offset = m_Value > 0 ? 1 : -1;
+            float offset = m_CurrentThrust > 0 ? 1 : -1;
             offset *= 0.2f;
             
-            speedVisualObject.transform.position = transform.position + transform.up * (m_Value * 0.5f + offset);
+            speedVisualObject.transform.position = transform.position + transform.up * (m_CurrentThrust * 0.5f + offset);
             
             var localScale = speedVisualObject.transform.localScale;
-            localScale = new Vector3(localScale.x, Math.Abs(m_Value), localScale.z);
+            localScale = new Vector3(localScale.x, Math.Abs(m_CurrentThrust), localScale.z);
             speedVisualObject.transform.localScale = localScale;
         }
         
-        //m_CurrentThrust = Mathf.Lerp(m_CurrentThrust, m_Value, Time.fixedDeltaTime * thrustResponse);
-        RigidbodyRef.AddForceAtPosition(transform.up * (m_Value * thrustScale), transform.position, ForceMode.Force);
+        RigidbodyRef.AddForceAtPosition(transform.up * (m_CurrentThrust * thrustScale), transform.position, ForceMode.Force);
         //RigidbodyRef.AddRelativeTorque(transform.up * (m_CurrentThrust * torqueScale * (rotationCW ? -1 : 1)), ForceMode.Force);
+    }
+
+    public override void Reset()
+    {
+        m_CurrentThrust = 0;
+        m_Value = 0;
     }
 
     public void SetThrust(float thrust)

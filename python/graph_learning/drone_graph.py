@@ -51,7 +51,7 @@ class DNode:
         propeller_edge = next((x for x in entropy_edges if x.get_destination() == "propeller"), None)
 
         dnodes = []
-        if pending_dnode.depth >= 5 and propeller_edge is not None:
+        if pending_dnode.depth >= 3 and propeller_edge is not None:
             next_node = next(x for x in self.design_graph.get_nodes() if propeller_edge.get_destination() == x.get_name())
             dnodes.append(DNode(self.sockets_dict, next_node, pending_dnode, pending_socket, self))
         else:

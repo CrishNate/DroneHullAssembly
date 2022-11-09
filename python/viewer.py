@@ -56,10 +56,11 @@ if __name__ == '__main__':
     # args = parser.parse_args()
 
     args = argparse.Namespace()
+    pattern_str = "0 2 2 1 5 8 8 8 3"
     setattr(args, "grammar_file", "../data/designs/graph_23oct.dot")
-    setattr(args, "model_file", "../results/models/023158288.zip")
+    setattr(args, "model_file", f"../results/models/{pattern_str.replace(' ', '')}.zip")
     #setattr(args, "model_file", None)
-    setattr(args, "rule_sequence", "0 2 3 1 5 8 2 8 8".split(" "))
+    setattr(args, "rule_sequence", pattern_str.split(" "))
 
     graphs = pydot.graph_from_dot_file(args.grammar_file)
     design_graph = graphs[0]

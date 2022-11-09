@@ -29,7 +29,6 @@ from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.logger import configure
 from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold, StopTrainingOnNoModelImprovement
 from stable_baselines3 import PPO
 
@@ -56,7 +55,7 @@ def make_unity_env(pattern, rank = 0):
     Create a wrapped, monitored Unity environment.
     """
     engine_channel = EngineConfigurationChannel()
-    engine_channel.set_configuration(EngineConfig(600, 600, 1, 5.0, -1, 30))
+    engine_channel.set_configuration(EngineConfig(600, 600, 1, 20.0, -1, 30))
     unity_env = UnityEnvironment(file_name="../env/DroneHullAssembly",
                                  side_channels=[engine_channel, valid_design_channel],
                                  no_graphics=True,
@@ -116,8 +115,10 @@ def simulate(args, csv_designs_writer, dnode):
                 learning_rate=1e-3,
                 device="auto")
 
+    # 800 is enough to understand that design is actually can solve the task (stay in air)
+    # but actually, we don't need this two rules, because it's only just for speed up processes
     callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=800, verbose=0)
-    stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=20, min_evals=20, verbose=0)
+    stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=30, min_evals=30, verbose=0)
     eval_callback = DesignEvalCallback(env,
                                  callback_on_new_best=callback_on_best,
                                  callback_after_eval=stop_train_callback,

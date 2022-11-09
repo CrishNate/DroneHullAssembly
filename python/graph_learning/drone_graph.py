@@ -4,16 +4,19 @@ import pydot
 import random
 
 class DNode:
+    design_graph = None
+    simulation = None
+    value = None
 
-    def __init__(self, design_graph, sockets_dict, node, dnode, pending_nodes, socket):
-        self.design_graph = design_graph
+    def __init__(self, sockets_dict, node, dnode, socket, parent):
         self.sockets_dict = sockets_dict
         self.node = node
         self.depth = 0
+        self.parent = parent
 
         if dnode:
-            self.pending_nodes = copy(pending_nodes)
-            self.pending_nodes[dnode] = copy(pending_nodes[dnode])
+            self.pending_nodes = copy(parent.pending_nodes)
+            self.pending_nodes[dnode] = copy(parent.pending_nodes[dnode])
             self.pending_nodes[dnode].remove(socket)
 
             if len(self.pending_nodes[dnode]) == 0:
@@ -47,21 +50,43 @@ class DNode:
         # Filtering edge that contain propeller end point
         propeller_edge = next((x for x in entropy_edges if x.get_destination() == "propeller"), None)
 
+        dnodes = []
         if pending_dnode.depth >= 5 and propeller_edge is not None:
             next_node = next(x for x in self.design_graph.get_nodes() if propeller_edge.get_destination() == x.get_name())
-            next_dnode = DNode(self.design_graph, self.sockets_dict, next_node, pending_dnode, self.pending_nodes, pending_socket)
-            return [next_dnode]
+            dnodes.append(DNode(self.sockets_dict, next_node, pending_dnode, pending_socket, self))
         else:
-            dnodes = []
             for e in entropy_edges:
                 next_node = next(x for x in self.design_graph.get_nodes() if e.get_destination() == x.get_name())
-                next_dnode = DNode(self.design_graph, self.sockets_dict, next_node, pending_dnode, self.pending_nodes, pending_socket)
+                next_dnode = DNode(self.sockets_dict, next_node, pending_dnode, pending_socket, self)
                 dnodes.append(next_dnode)
-            return dnodes
 
+        for dnode in dnodes:
+            dnode.design_graph = self.design_graph
+            dnode.simulation = self.simulation
 
-    def get_random_child(self):
+        return dnodes
+
+    def find_random_child(self):
         return random.choice(self.find_children())
+
+    def get_pattern(self):
+        pattern = [next(i for i, v in enumerate(self.design_graph.get_nodes()) if self.node.get_name() == v.get_name())]
+
+        dnode = self
+        while dnode.parent:
+            dnode = dnode.parent
+            pattern.append(next(i for i, v in enumerate(self.design_graph.get_nodes()) if dnode.node.get_name() == v.get_name()))
+
+        pattern = [str(i) for i in pattern]
+        pattern.reverse()
+        return pattern
+
+    def reward(self):
+        if self.value:
+            return self.value
+        else:
+            return self.simulation(self)
+
 
 class DGraph:
     nodes = []
@@ -123,7 +148,7 @@ def generate_part(dgraph, node, design_graph, depth):
 
         next_node = deepcopy(next(x for x in design_graph.get_nodes() if x.get_name() == edge.get_destination()))
         # Setting edge as ids for its destination and source nodes
-        edge.obj_dict['points_ids'] = [ node, next_node ]
+        edge.obj_dict['points_ids'] = [node, next_node]
 
         # We add the mirrored socket, so it won't add part to it twice
         if "socket_mirror" in edge.get_attributes() and "mirror" in edge.get_attributes():

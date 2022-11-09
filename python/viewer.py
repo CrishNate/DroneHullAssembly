@@ -19,6 +19,7 @@ def viewer(design_graph, model_file, pattern):
     engine_channel.set_configuration(EngineConfig(600, 600, 1, 1.0, 60, 60))
     unity_env = UnityEnvironment(file_name="../env/DroneHullAssembly",
                                  side_channels=[engine_channel],
+                                 worker_id=50,
                                  additional_args=args + ["-d"] + pattern)
 
     env = UnityToGymWrapper(unity_env)
@@ -49,16 +50,16 @@ if __name__ == '__main__':
     #
     # parser.add_argument('--task', type = str, default = 'FlatTerrainTask', help = 'Task (Python class name')
     # parser.add_argument("grammar_file", type = str, default = "../data/designs/graph_23oct.dot", help="Grammar file (.dot)")
-    # parser.add_argument("model_file", type = str, default = "../results/models/results.zip", help = 'Pretrained model to use')
+    # parser.add_argument("model_file", type = str, default = "../results/models/.zip", help = 'Pretrained model to use')
     # parser.add_argument("rule_sequence", nargs="+", help="Drone pattern to use")
     #
     # args = parser.parse_args()
 
     args = argparse.Namespace()
     setattr(args, "grammar_file", "../data/designs/graph_23oct.dot")
-    setattr(args, "model_file", "../results/models/032186313161338.zip")
+    setattr(args, "model_file", "../results/models/023158288.zip")
     #setattr(args, "model_file", None)
-    setattr(args, "rule_sequence", "0 3 2 1 8 6 3 1 3 1 6 1 3 3 8".split(" "))
+    setattr(args, "rule_sequence", "0 2 3 1 5 8 2 8 8".split(" "))
 
     graphs = pydot.graph_from_dot_file(args.grammar_file)
     design_graph = graphs[0]

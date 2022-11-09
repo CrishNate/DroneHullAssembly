@@ -1,6 +1,7 @@
 """
 BenjaminWang Dec. 2020.
 Adapted from: https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
+Got from: https://github.com/wlongxiang/mcts/tree/a2ae10a919cf08547968a2895676b71e1ac97547
 """
 from collections import defaultdict
 import math
@@ -35,6 +36,7 @@ class MCTS:
         path = self.select(node)
         leaf = path[-1]
         self.expand(leaf)
+
         reward = 0
         for i in range(num_rollout):
             reward += self.simulate(leaf)
